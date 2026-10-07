@@ -4,44 +4,26 @@ setlocal
 cd /d "%~dp0"
 title 화분 펫
 
-where node >nul 2>nul
-if errorlevel 1 (
-  echo [!] Node.js 가 설치되어 있지 않아요.
-  echo     https://nodejs.org 에서 LTS 버전을 설치한 뒤 다시 실행해 주세요.
-  echo     ^(Node.js 없이 쓰려면 PotPet-portable.zip 을 받으세요^)
-  echo.
-  pause
-  exit /b 1
-)
+rem 화분 펫 (C# 버전). Node.js 도 설치도 필요 없어요. Windows 에 기본으로 있는 .NET Framework 로 처음 한 번 빌드해요.
+set "EXE=native\dist\PotPet.exe"
+if not exist "%EXE%" goto build
+rem 코드(.cs)가 exe 보다 새로우면 다시 빌드
+powershell -NoProfile -Command "$e = (Get-Item 'native\dist\PotPet.exe').LastWriteTime; if (Get-ChildItem 'native\*.cs' | Where-Object LastWriteTime -gt $e) { exit 1 } else { exit 0 }"
+if errorlevel 1 goto build
+goto run
 
-if exist "node_modules\electron\dist\electron.exe" goto run
-
-echo 처음 한 번만 필요한 설치를 하고 있어요. 1~2분 걸려요...
-echo.
-call npm install --no-audit --no-fund --ignore-scripts=false
-if exist "node_modules\electron\dist\electron.exe" goto run
-
-rem npm 은 끝났는데 Electron 본체(exe)가 없다 = 내려받기가 막힌 경우가 대부분이에요.
-echo.
-echo [!] Electron 본체를 내려받지 못했어요. 다른 주소(미러)로 다시 시도할게요...
-set ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
-if exist "node_modules\electron\install.js" (
-  node node_modules\electron\install.js
-) else (
-  call npm install --no-audit --no-fund --ignore-scripts=false
-)
-if exist "node_modules\electron\dist\electron.exe" goto run
-
-echo.
-echo [!] 그래도 Electron 을 찾지 못했어요. 회사 네트워크(프록시/보안 프로그램)가 막고 있을 수 있어요.
-echo     - 인터넷이 되는 곳에서 다시 실행해 보거나
-echo     - 폴더 안의 node_modules 를 지우고 다시 실행하거나
-echo     - Electron 이 설치된 PC 에서 make-portable.bat 으로 만든 PotPet-portable.zip 을 받아 쓰세요.
-echo.
-pause
-exit /b 1
+:build
+echo 화분 펫을 준비하고 있어요. 몇 초 걸려요...
+powershell -NoProfile -ExecutionPolicy Bypass -File native\build.ps1
+if errorlevel 1 goto fail
 
 :run
 rem 콘솔 창은 닫고 화분만 띄워요
-start "" "node_modules\electron\dist\electron.exe" .
+start "" "%EXE%"
 exit /b 0
+
+:fail
+echo.
+echo [!] 빌드하지 못했어요. 위 메시지를 확인해 주세요.
+pause
+exit /b 1

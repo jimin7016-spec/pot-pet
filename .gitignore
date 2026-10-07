@@ -1,7 +1,4 @@
-node_modules/
 dist/
-preview/
-PotPet-portable/
-PotPet-portable.zip
 *.zip
+*.log
 .DS_Store
